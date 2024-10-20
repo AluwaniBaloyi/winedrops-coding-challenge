@@ -7,8 +7,11 @@ import { join } from "path";
   const fastify: FastifyInstance = Fastify({ logger: true });
   const dbPath = join(__dirname, 'db/winedrops.db');
 
-// Register CORS
-  fastify.register(cors);
+  // Register CORS (with more specific configuration)
+  fastify.register(cors, {
+    origin: 'http://localhost:5173', // Allow only requests from your frontend
+    methods: ['GET'], // Allow specific HTTP methods if needed
+  });
 
 // SQLite Database Connection
   const db = new sqlite3.Database(dbPath);

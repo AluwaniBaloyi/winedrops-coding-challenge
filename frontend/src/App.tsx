@@ -1,8 +1,6 @@
-import React, { ChangeEvent, useEffect, useState } from "react";
-import axios from "axios";
+import React, { useEffect, useState } from "react";
 import "./App.css";
 
-// Define a type for the wine data
 interface Wine {
   wine_id: number;
   name: string;
@@ -13,81 +11,57 @@ interface Wine {
 }
 
 function App() {
-  const [wines, setWines] = useState<Wine[]>([]); // State for wine data
-  const [criteria, setCriteria] = useState<string>('revenue'); // Sorting criteria
-  const [searchQuery, setSearchQuery] = useState<string>(''); // Search query
+  const [wines, setWines] = useState<Wine[]>([]);
+  const [criteria, setCriteria] = useState<string>('revenue');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Base URL for Fastify server
-  const BASE_URL = 'http://localhost:3000'; // Change to your server's URL if needed
-
-  // Fetch all wines based on the current criteria
-  const fetchWines = async () => {
-    try {
-      const response = await axios.get<Wine[]>(`${BASE_URL}/wines`, {
-        params: { criteria }, // Passing the criteria parameter
-      });
-      setWines(response.data); // Set the fetched wines to the state
-    } catch (error) {
-      console.error('Error fetching wines:', error);
-    }
-  };
-
-  // Search wines by name or vintage
-  const searchWines = async () => {
-    try {
-      const response = await axios.get<Wine[]>(`${BASE_URL}/wines/search`, {
-        params: { query: searchQuery }, // Passing the search query parameter
-      });
-      setWines(response.data); // Set the searched wines to the state
-    } catch (error) {
-      console.error('Error searching wines:', error);
-    }
-  };
-
-  // Fetch wines when the component mounts or criteria changes
   useEffect(() => {
-    fetchWines();
+    fetch(`http://localhost:3000/wines?criteria=${criteria}`)
+        .then((response) => response.json())
+        .then((data: Wine[]) => setWines(data))
+        .catch((error) => console.error('Error fetching wine data:', error));
   }, [criteria]);
 
-  // Handle search input change
-  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
+    fetch(`http://localhost:3000/wines/search?query=${e.target.value}`)
+        .then((response) => response.json())
+        .then((data: Wine[]) => setWines(data))
+        .catch((error) => console.error('Error fetching search results:', error));
   };
 
-  // Handle criteria change in the select dropdown
-  const handleCriteriaChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    setCriteria(e.target.value);
-  };
-  
+  const top10Percent = wines.length ? Math.ceil(wines.length * 0.1) : 0;
+  const bottom10Percent = wines.length ? Math.ceil(wines.length * 0.1) : 0;
 
   return (
       <div className="App">
         <h1>Best Selling Wines</h1>
 
-        <div>
-          <label>Sort by: </label>
-          <select value={criteria} onChange={handleCriteriaChange}>
+        <div className="controls">
+          <select value={criteria} onChange={e => setCriteria(e.target.value)}>
             <option value="revenue">Revenue</option>
-            <option value="quantity">Quantity</option>
-            <option value="orders">Orders</option>
+            <option value="quantity">Total Bottles Sold</option>
+            <option value="orders">Number of Orders</option>
           </select>
-        </div>
 
-        <div>
           <input
               type="text"
+              placeholder="Search by name or vintage"
               value={searchQuery}
-              onChange={handleSearchChange}
-              placeholder="Search wines"
+              onChange={handleSearch}
           />
-          <button onClick={searchWines}>Search</button>
         </div>
 
         <ul>
-          {wines.map((wine) => (
-              <li key={wine.wine_id}>
-                {wine.name} ({wine.vintage}) - Orders: {wine.totalOrders}, Revenue: $
-                {wine.totalRevenue}
+          {wines.map((wine, index) => (
+              <li
+                  key={`${wine.name}-${wine.vintage}`}
+                  className={
+                    index < top10Percent ? 'top10' :
+                        index >= wines.length - bottom10Percent ? 'bottom10' : ''
+                  }
+              >
+                {wine.name} ({wine.vintage}) - {wine.totalRevenue.toFixed(2)} - {wine.totalQuantity} bottles sold
               </li>
           ))}
         </ul>

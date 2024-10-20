@@ -5,12 +5,11 @@ import { join } from "path";
 
 (async () => {
   const fastify: FastifyInstance = Fastify({ logger: true });
-  const dbPath = join(__dirname, 'db/winedrops.db');
+  const dbPath = join(process.cwd(), 'db/winedrops.db'); // current working directory
 
   // Register CORS (with more specific configuration)
   fastify.register(cors, {
     origin: 'http://localhost:5173', // Allow only requests from your frontend
-    methods: ['GET'], // Allow specific HTTP methods if needed
   });
 
 // SQLite Database Connection

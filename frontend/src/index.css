@@ -1,0 +1,22 @@
+.App {
+    font-family: Arial, sans-serif;
+}
+
+.controls {
+    margin-bottom: 20px;
+}
+
+input[type="text"] {
+    margin-left: 10px;
+    padding: 5px;
+}
+
+.top10 {
+    color: green;
+    font-weight: bold;
+}
+
+.bottom10 {
+    color: red;
+    font-weight: bold;
+}

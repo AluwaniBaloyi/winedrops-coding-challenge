@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from "react";
-import "./App.css";
+// frontend/src/App.tsx
+
+import React, { useEffect, useState } from 'react';
+import './App.css';
 
 interface Wine {
   wine_id: number;
@@ -10,7 +12,7 @@ interface Wine {
   totalOrders: number;
 }
 
-function App() {
+const App: React.FC = () => {
   const [wines, setWines] = useState<Wine[]>([]);
   const [criteria, setCriteria] = useState<string>('revenue');
   const [searchQuery, setSearchQuery] = useState<string>('');

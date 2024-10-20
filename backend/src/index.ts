@@ -50,23 +50,32 @@ import { join } from "path";
     return Object.values(wineMap);
   }
 
-// Get Wines - Filter by "best selling" criteria
+// Convert db.all to a promise
+  function runQuery(query: string): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+      db.all(query, [], (err, rows) => {
+        if (err) {
+          reject(err); // If there's an error, reject the promise
+        } else {
+          resolve(rows); // If successful, resolve the promise with rows
+        }
+      });
+    });
+  }
+
   fastify.get('/wines', async (request, reply) => {
     const { criteria = 'revenue' } = request.query as { criteria: string };
 
     const query = `
-    SELECT mw.id as wine_id, mw.name, mw.vintage, co.quantity, co.total_amount
-    FROM customer_order co
-    JOIN wine_product wp ON co.wine_product_id = wp.id
-    JOIN master_wine mw ON wp.master_wine_id = mw.id
-    WHERE co.status IN ('paid', 'dispatched')
-  `;
+      SELECT mw.id as wine_id, mw.name, mw.vintage, co.quantity, co.total_amount
+      FROM customer_order co
+             JOIN wine_product wp ON co.wine_product_id = wp.id
+             JOIN master_wine mw ON wp.master_wine_id = mw.id
+      WHERE co.status IN ('paid', 'dispatched')
+    `;
 
-    db.all(query, [], (err: any, rows: any[]) => {
-      if (err) {
-        return reply.status(500).send({ error: 'Database error' });
-      }
-
+    try {
+      const rows = await runQuery(query); // Await the promise
       const wines = aggregateWineData(rows);
 
       // Sort wines based on the criteria
@@ -81,11 +90,14 @@ import { join } from "path";
         return 0;
       });
 
-      reply.send(wines);
-    });
+      reply.send(wines); // Send the wines data
+    } catch (err) {
+      reply.status(500).send({ error: 'Database error' }); // Handle the error
+    }
   });
 
-// Search Wines
+
+
   fastify.get('/wines/search', async (request, reply) => {
     const { query = '' } = request.query as { query: string };
 
@@ -97,14 +109,22 @@ import { join } from "path";
     WHERE co.status IN ('paid', 'dispatched') AND (LOWER(mw.name) LIKE ? OR mw.vintage LIKE ?)
   `;
 
-    db.all(sqlQuery, [`%${query.toLowerCase()}%`, `%${query}%`], (err: any, rows: any[]) => {
-      if (err) {
-        return reply.status(500).send({ error: 'Database error' });
-      }
+    try {
+      const rows = await new Promise((resolve, reject) => {
+        db.all(sqlQuery, [`%${query.toLowerCase()}%`, `%${query}%`], (err, rows) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
+        });
+      });
 
       const wines = aggregateWineData(rows);
       reply.send(wines);
-    });
+    } catch (err) {
+      reply.status(500).send({ error: 'Database error' });
+    }
   });
 
 
